@@ -30,8 +30,17 @@ def play(sock):
     # response = sock.recv(1024).decode('ASCII')
     # print(response)
     # Receive message
+    life = 0
+    points = 0
     while True:
-        response = sock.recv(1024).decode('ASCII')        # send_message(sock, 'WALK')
+        response = sock.recv(1024).decode('ASCII')
+        try:
+            life = int(response.split(';')[2])
+            points = int(response.split(';')[3])
+            show_message(' --- SUA VIDA: {}---\n--- SEUS PONTOS: {} ---'.format(life, points))
+        except IndexError:
+            life += 0
+            points += 0    # send_message(sock, 'WALK')
 
         if response == 'GAME_OVER' or response == 'WIN':
             show_message('Fim de jogo!')
@@ -40,8 +49,8 @@ def play(sock):
 
         # print(response) # verificar se response não está vazio
 
-        if response.startswith("MONSTER_ATTACK;"):
-            show_message('AH MEU DEUS, O MONSTRO TE ATACOU!!!\nRÁPIDO! Escolha um númeroo de 0 a {} para contra-atacar!'.format(response.split(';')[1]))
+        elif response.startswith("MONSTER_ATTACK;"):
+            show_message('AH MEU DEUS, O MONSTRO TE ATACOU!!!\nRÁPIDO! Escolha um número de 0 a {} para contra-atacar!'.format(response.split(';')[1]))
             answer = str(input())
             while not answer.isdigit() or int(answer) < 0 or int(answer) > int(response.split(';')[1]):
                 show_message('Resposta inválida, bobinho! Digite um número de 0 a {}'.format(response.split(';')[1]))
@@ -86,21 +95,25 @@ def play(sock):
                 show_message(f'Você perdeu sua luta contra o chefe e perdeu {response.split(";")[1]} de vida... :(')
             elif response.startswith("ESCAPED"):
                 show_message('Você conseguiu fugir do chefe!\n...Mas perdeu um pouco de vida :/')
-                show_message('Você perdeu {} de vida'.format(response.split(';')[1]))
+                show_message('Você está com {} de vida'.format(response.split(';')[1]))
             elif response.startswith("BOSS_DEFEATED"):
                 show_message('Você derrotou o chefe! :D')
             elif response.startswith("MONSTER_KILLED"):
                 show_message('Você derrotou o monstro! :D')
+                show_message('E você ganhou {} pontos!'.format(response.split(';')[2]))
             elif response.startswith("MONSTER_ESCAPED"):
                 show_message('Você não conseguiu derrotar o monstro... :(')
             elif response.startswith("MONSTER_ATTACKED"):
                 show_message('O monstro desviou e te atacou! :(')
+                show_message('Você está com {} de vida'.format(response.split(';')[1]))
             elif response.startswith("FAILED_BOSS_FIGHT"):
                 show_message('Você perdeu sua luta contra o chefe... :(')
             elif response.startswith("SKIPPING_CHEST"):
                 show_message('Você decidiu não abrir o baú :/')
             elif response.startswith("GAME_OVER") or response.startswith("WIN"):
                 show_message('Fim de jogo!')
+                sock.close()
+                break
             else:
                 show_message(response)
 
