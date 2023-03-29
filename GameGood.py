@@ -98,6 +98,8 @@ def play(sock):
                 show_message('Você está com {} de vida'.format(response.split(';')[1]))
             elif response.startswith("BOSS_DEFEATED"):
                 show_message('Você derrotou o chefe! :D')
+                show_message('E ficou com {} pontos :D'.format(response.split(';')[2]))
+                show_message('Mas... perdeu {} pontos de vida :D'.format(response.split(';')[1]))
             elif response.startswith("MONSTER_KILLED"):
                 show_message('Você derrotou o monstro! :D')
                 show_message('E você ganhou {} pontos!'.format(response.split(';')[2]))
