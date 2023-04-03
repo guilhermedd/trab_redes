@@ -1,14 +1,7 @@
-import socket
-import time
-import sys
 import os
-
-HOST = 'localhost'
-PORT = 12000
-sock = socket.socket(socket.AF_INET, # internet
-                        socket.SOCK_STREAM) # TCP
-
-def play(sock):
+import sys
+import time
+def play_manual(sock, host, port,):
 
     def clear_terminal():
         syst = 'cls' if os.name == 'nt' else 'clear'
@@ -95,7 +88,7 @@ def play(sock):
             show_message('Você fugiu do chefe! Mas está com {} de vida!'.format(response[1]))
 
     # Connect to server
-    sock.connect((HOST, PORT))
+    sock.connect((host, port))
 
     # Start game
     send_message(sock, 'START')
@@ -146,7 +139,3 @@ def play(sock):
         print('Para seguir para a próxima sala, aperte ENTER')
         if input():
             send_message(sock, 'WALK')
-
-
-if __name__ == '__main__':
-    play(sock)

@@ -1,14 +1,12 @@
-import socket
+from AI import QLearn
 import time
 import sys
 import os
 
-HOST = 'localhost'
-PORT = 12000
-sock = socket.socket(socket.AF_INET, # internet
-                        socket.SOCK_STREAM) # TCP
+def play_auto(sock, host, port,):
 
-def play(sock):
+    qlearn = QLearn()
+    state = 0
 
     def clear_terminal():
         syst = 'cls' if os.name == 'nt' else 'clear'
@@ -17,33 +15,33 @@ def play(sock):
     def send_message(sock, message):
         sock.sendall(message.encode('UTF-8'))
 
-    def show_message(message, sleeping = 0.05):
+    def show_message(message, sleeping = 0.1):
         for l in message:
             sys.stdout.write(l)
             sys.stdout.flush()
             if l == '.':
-                sleeping = 0.1
+                sleeping = 0.005
             else:
-                sleeping = 0.05
+                sleeping = 0.1
             time.sleep(sleeping)
         print('\n')
 
     def get_monster_response(life):
         response = sock.recv(1024).decode('ASCII').split(';')
+        efficacy = 0
         if response[0] == "MONSTER_KILLED":
             show_message('Você derrotou o monstro! :D')
         else:
             show_message('O monstro desviou e te atacou! :(')
             show_message('Você está com {} de vida'.format(response[1]))
             life = response[1]
-        return life
+            efficacy = -1
+        return life, efficacy
 
-    def get_monster_atack(msg, num, life):
+    def get_monster_atack(msg, num, life, choice):
         show_message(msg)
-        answer = str(input())
-        while not answer.isdigit() or int(answer) < 0 or int(answer) > int(num):
-            show_message('Resposta inválida, bobinho! Digite um número de 0 a {}'.format(num))
-            answer = str(input())
+        answer = str(choice)
+        print(f'Eu escolho... {answer}')
         send_message(sock, answer)
 
         return get_monster_response(life)
@@ -51,51 +49,48 @@ def play(sock):
     def get_nothing():
         show_message('Nada aconteceu... Voce resolveu continuar a aventura!')
 
-    def get_chest():
+    def get_chest(choice):
         show_message('Você encontrou um baú hihihi!\nPode ser que lá tenha algo bom... ou algo ruim...\nDeseja abrir o baú? (S/N)')
-        answer = str(input())
-        while answer != 'S' and answer != 's' and answer != 'N' and answer != 'n':
-            show_message('Resposta inválida, bobinho! Digite S ou N')
-            answer = str(input())
-        send_message(sock, 'YES' if answer == 'S' or answer == 's' else 'NO')
-        if answer == 'S' or answer == 's':
-            show_message('Você abriu o baú e encontrou {} pontos!'.format(sock.recv(1024).decode('ASCII').split(';')[1]))
+        print('Eu escolho: ' + str(choice))
+        answer = str(choice)
+        send_message(sock, answer)
+        if choice == 'YES':
+            pontos = sock.recv(1024).decode('ASCII').split(';')[1]
+            show_message('Você abriu o baú e encontrou {} pontos!'.format(pontos))
+            return -1 if pontos < 0 else 1
         else:
             sock.recv(1024).decode('ASCII')
             show_message('Você decidiu não abrir o baú :/')
+            return 0
 
     def game_over(message):
         show_message(f'Fim de jogo!, voce {"GANHOU" if message == "WIN" else "PERDEU"}')
         sock.close()
 
-    def get_boss(life):
+    def get_boss(choice):
         show_message('Você se deparou com o chefe do jogo!!!\nVoce quer lutar contra ele?')
         show_message('Se voce escolher lutar e morrer, poderá perder bastante vida...')
         show_message('Se voce escolher fugir, perderá um pouco de vida...')
         show_message('Desejas lutar? (S/N)', sleeping=0.01)
-        answer = str(input())
-        while answer != 'S' and answer != 's' and answer != 'N' and answer != 'n':
-            show_message('Resposta inválida, bobinho! Digite S ou N')
-            answer = str(input())
-        if answer == 'S' or answer == 's':
-            send_message(sock, 'FIGHT')
-            print('Voce escolheu LUTAR!')
-        else:
-            send_message(sock, 'RUN')
+        answer = str(choice)
+        print(f'Eu escolho...{answer}')
+        send_message(sock, answer)
 
         response = sock.recv(1024).decode('ASCII').split(';')
         print(response)
         if response[0] == 'BOSS_DEFEATED':
             show_message('Você derrotou o chefe! :D')
             show_message('E você ganhou {} pontos!'.format(response[2]))
+            return  1
         elif response[0] == 'FAILED_BOSS_FIGHT':
             show_message('O chefe desviou e te atacou! :(')
             show_message('Você está com {} de vida'.format(response[1]))
-        else:
-            show_message('Você fugiu do chefe! Mas está com {} de vida!'.format(response[1]))
+            return -1
+        show_message('Você fugiu do chefe! Mas está com {} de vida!'.format(response[1]))
+        return 0
 
     # Connect to server
-    sock.connect((HOST, PORT))
+    sock.connect((host, port))
 
     # Start game
     send_message(sock, 'START')
@@ -103,6 +98,7 @@ def play(sock):
     life = 100
     points = 0
     room = 0
+    next_state = 0
 
     while True:
         clear_terminal()
@@ -127,15 +123,21 @@ def play(sock):
         # print(response) # verificar se response não está vazio
 
         elif response[0] == 'MONSTER_ATTACK':
-            life = get_monster_atack('AH MEU DEUS, O MONSTRO TE ATACOU!!!\nRÁPIDO! Escolha um número de 0 a {} para contra-atacar!'.format(response[1]), response[1], life)
+            state = 0
+            choice = qlearn.choose_action(event='MONSTER_ATTACK', num=response[1], state=state)
+            life, reward = get_monster_atack('AH MEU DEUS, O MONSTRO TE ATACOU!!!\nRÁPIDO! Escolha um número de 0 a {} para contra-atacar!'.format(response[1]), response[1], life, choice)
             send_message(sock, 'WALK')
 
         elif response[0] == "TAKE_CHEST":
-            get_chest()
+            state = 1
+            choice = qlearn.choose_action(event='TAKE_CHEST', state=state, num = 0) 
+            reward = get_chest(choice)
             send_message(sock, 'WALK')
 
         elif response[0] == "BOSS_EVENT":
-            get_boss(life)
+            state = 2
+            choice = qlearn.choose_action(event='BOSS_EVENT', state=state, num = 0)
+            reward = get_boss(life)
             send_message(sock, 'WALK')
             # sock.recv(1024)
 
@@ -143,10 +145,9 @@ def play(sock):
             get_nothing()
             send_message(sock, 'WALK')
 
-        print('Para seguir para a próxima sala, aperte ENTER')
-        if input():
-            send_message(sock, 'WALK')
+        print('aqui')
+        # send_message(sock, 'WALK')
+        if response[0] != "NOTHING_HAPPENED":
+            qlearn.learn(response[0], choice, reward, state)
 
-
-if __name__ == '__main__':
-    play(sock)
+        time.sleep(3)
