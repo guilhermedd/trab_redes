@@ -18,13 +18,16 @@ def play(sock):
             sys.stdout.flush()
             if l == '.':
                 sleeping = 0.1
+            else:
+                sleeping = 0.05
             time.sleep(sleeping)
         print('\n')
 
-    def get_monster_response(response):
-        if response == "MONSTER_KILLED":
+    def get_monster_response():
+        response = sock.recv(1024).decode('ASCII').split(';')
+        if response[0] == "MONSTER_KILLED":
             show_message('Você derrotou o monstro! :D')
-            show_message('E você ganhou {} pontos!'.format(response[2]))
+            show_message('E você ganhou {} pontos!'.format(response[1]))
         else:
             show_message('O monstro desviou e te atacou! :(')
             show_message('Você está com {} de vida'.format(response[1]))
@@ -37,11 +40,10 @@ def play(sock):
             answer = str(input())
         send_message(sock, answer)
 
-        get_monster_response(sock.recv(1024).decode('ASCII').split(';')[0])
+        get_monster_response()
 
     def get_nothing():
         show_message('Nada aconteceu... Voce resolveu continuar a aventura!')
-        send_message(sock, 'WALK')
 
     def get_chest():
         show_message('Você encontrou um baú hihihi!\nPode ser que lá tenha algo bom... ou algo ruim...\nDeseja abrir o baú? (S/N)')
@@ -71,16 +73,18 @@ def play(sock):
             answer = str(input())
         if answer == 'S' or answer == 's':
             send_message(sock, 'FIGHT')
+            print('Voce escolheu LUTAR!')
         else:
             send_message(sock, 'RUN')
 
-        response = sock.recv(1024).decode('ASCII').split(';')[0]
-        if response == 'BOSS_KILLED':
+        response = sock.recv(1024).decode('ASCII').split(';')
+        print(response)
+        if response[0] == 'BOSS_DEFEATED':
             show_message('Você derrotou o chefe! :D')
             show_message('E você ganhou {} pontos!'.format(response[1]))
-        elif response == 'FILED_BOSS_FIGHT':
+        elif response[0] == 'FAILED_BOSS_FIGHT':
             show_message('O chefe desviou e te atacou! :(')
-            show_message('Você está com {} de vida'.format(response[1]))
+            show_message('Você está com {} de vida'.format(response[2]))
         else:
             show_message('Você fugiu do chefe e perdeu {} de vida!'.format(response[2]))
 
@@ -105,29 +109,33 @@ def play(sock):
             life += 0
             points += 0    # send_message(sock, 'WALK')
 
-        if response == 'GAME_OVER' or response == 'WIN':
-            game_over()
+        if response[0] == 'GAME_OVER' or response == 'WIN':
+            game_over(response[0])
             break
 
         # print(response) # verificar se response não está vazio
 
         elif response[0] == 'MONSTER_ATTACK':
             get_monster_atack('AH MEU DEUS, O MONSTRO TE ATACOU!!!\nRÁPIDO! Escolha um número de 0 a {} para contra-atacar!'.format(response[1]), response[1])
+            send_message(sock, 'WALK')
 
         elif response[0] == "TAKE_CHEST":
             get_chest()
+            send_message(sock, 'WALK')
 
         elif response[0] == "BOSS_EVENT":
-            get_boss
+            get_boss()
+            send_message(sock, 'WALK')
             # sock.recv(1024)
 
         elif response[0] == "NOTHING_HAPPENED":
             get_nothing()
-
-        else:
-            show_message(response[0])
-
             send_message(sock, 'WALK')
+
+        print('Para seguir para a próxima sala, aperte ENTER')
+        if input():
+            send_message(sock, 'WALK')
+
 
 if __name__ == '__main__':
     play(sock)
