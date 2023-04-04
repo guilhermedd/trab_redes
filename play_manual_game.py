@@ -16,10 +16,10 @@ def play_manual_game(sock, host, port,):
      pygame.display.set_caption("RPG")
 
      # Background Image
-     background_image = pygame.image.load('.\img\Background/background.png').convert_alpha()
+     background_image = pygame.image.load('img/Background/background.png').convert_alpha()
      background_image = pygame.transform.scale(background_image, (size[0], size[1]))
 
-     panel_image = pygame.image.load('./img/Icons/panel.png').convert_alpha()
+     panel_image = pygame.image.load('img/Icons/panel.png').convert_alpha()
      panel_image = pygame.transform.scale(panel_image, (size[0], bottom_panel))
 
      def draw_bg():
@@ -30,32 +30,48 @@ def play_manual_game(sock, host, port,):
      # screen.llit(background_image, [0, 0])
           screen.blit(panel_image, (0, size[1]))
 
-     def get_input(events):
-          for event in events:
-               if event.type == pygame.QUIT:
-                # Exit the game if the user closes the window
-                    pygame.quit()
-                    quit()
-               elif event.type == pygame.MOUSEBUTTONDOWN:
-                    # Set the input box to active if the user clicks on it
-                    if input_box.collidepoint(event.pos):
-                         input_active = True
-                    else:
-                         input_active = False
-               elif event.type == pygame.KEYDOWN:
-                    # Add characters to the user input if the input box is active
-                    if input_active:
-                         if event.key == pygame.K_RETURN:
-                              # Save the user input and clear the input box
-                              print("User input:", user_input)
-                              user_input = ""
-                         elif event.key == pygame.K_BACKSPACE:
-                              # Remove the last character from the user input
-                              user_input = user_input[:-1]
+     def get_input(x, y, h, l):
+          FONT = pygame.font.Font('freesansbold.ttf', 32)
+          # Set the input box dimensions
+          input_box = pygame.Rect(x, x + l, y, y + h)
+
+          user_input = ""
+
+          # Create a variable to check if the input box is active
+          input_active = False
+
+          while True:
+          # Handle events
+               for event in pygame.event.get():
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                         # Set the input box to active if the user clicks on it
+                         if input_box.collidepoint(event.pos):
+                              input_active = True
                          else:
-                              # Add the character to the user input
-                              user_input += event.unicode
-          return user_input
+                              input_active = False
+                    elif event.type == pygame.KEYDOWN:
+                         # Add characters to the user input if the input box is active
+                         if input_active:
+                              if event.key == pygame.K_RETURN:
+                                   # Save the user input and clear the input box
+                                   return user_input
+                              elif event.key == pygame.K_BACKSPACE:
+                                   # Remove the last character from the user input
+                                   user_input = user_input[:-1]
+                              else:
+                                   # Add the character to the user input
+                                   user_input += event.unicode
+
+               # Draw the text inside the input box
+               text_surface = FONT.render(user_input, True, pygame.Color("white"))
+               screen.blit(text_surface, (input_box.x + 5, input_box.y + 5))
+
+               # Update the display
+               pygame.display.flip()
+
+
+     # Update the display
+               pygame.display.flip()
 
      def write_panel(msg, x, y):
           WHITE = (255, 255, 255)
@@ -74,7 +90,7 @@ def play_manual_game(sock, host, port,):
                self.points = points
                self.room = room
                self.alive = True
-               self.img_path = './img\Knight\Idle/0.png'
+               self.img_path = 'img/Knight/Idle/0.png'
                img = pygame.image.load(self.img_path).convert_alpha()
                self.image = pygame.transform.scale(img, (img.get_width() * 3, img.get_height() * 3))
                self.rect = self.image.get_rect()
@@ -92,17 +108,6 @@ def play_manual_game(sock, host, port,):
 
      def send_message(sock, message):
           sock.sendall(message.encode('UTF-8'))
-
-     def show_message(message, sleeping = 0.5):
-          for l in message:
-               sys.stdout.write(l)
-               sys.stdout.flush()
-               if l == '.':
-                    sleeping = 0.1
-               else:
-                    sleeping = 0.05
-               time.sleep(sleeping)
-          print('\n')
 
      def get_monster_response(life):
           response = sock.recv(1024).decode('ASCII').split(';')
@@ -191,9 +196,7 @@ def play_manual_game(sock, host, port,):
           knight.draw()
           knight.room += 1
 
-          events = pygame.event.get()
-          for event in events:
-               events = pygame.event.get()
+          for event in pygame.event.get():
                clear_terminal()
                room += 1
                print(f"Room: {room}")
@@ -219,12 +222,12 @@ def play_manual_game(sock, host, port,):
                     # Fighter(700, 180, life, points, room).draw()
                     write_panel('AH MEU DEUS, O MONSTRO TE ATACOU!!!\nRÁPIDO! Escolha um número de 0 a {} para contra-atacar!'.format(response[1]), 50, 50)
                     input_box = pygame.Rect(50, 100, 300, 50)
-                    user_input = ""
                     input_active = False
-                    user_input = get_input(events)
-
-                    life = get_monster_atack('AH MEU DEUS, O MONSTRO TE ATACOU!!!\nRÁPIDO! Escolha um número de 0 a {} para contra-atacar!'.format(response[1]), response[1], life, user_input)
-                    send_message(sock, 'WALK')
+                    user_input = ''
+                    # while not int(user_input).isdigit() or int(user_input) < 0 or int(user_input) > int(response[1]):
+                         # user_input = int(get_input(pygame.event.get()))
+                    # life = get_monster_atack('AH MEU DEUS, O MONSTRO TE ATACOU!!!\nRÁPIDO! Escolha um número de 0 a {} para contra-atacar!'.format(response[1]), response[1], life, str(user_input))
+                    # send_message(sock, 'WALK')
 
                elif response[0] == "TAKE_CHEST":
                     points = get_chest(points)

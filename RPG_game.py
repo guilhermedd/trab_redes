@@ -12,10 +12,10 @@ pygame.display.set_caption("RPG")
 
 # Load Image
 # Background Image
-background_image = pygame.image.load('.\img\Background/background.png').convert_alpha()
+background_image = pygame.image.load('img/Background/background.png').convert_alpha()
 background_image = pygame.transform.scale(background_image, (size[0], size[1]))
 
-panel_image = pygame.image.load('./img/Icons/panel.png').convert_alpha()
+panel_image = pygame.image.load('img/Icons/panel.png').convert_alpha()
 panel_image = pygame.transform.scale(panel_image, (size[0], bottom_panel))
 # Function to draw background
 
@@ -27,12 +27,12 @@ def draw_panel():
     # screen.llit(background_image, [0, 0])
     screen.blit(panel_image, (0, size[1]))
 
-def write_panel(fighter):
+def write_panel(fighter, x, y):
     WHITE = (255, 255, 255)
     font = pygame.font.Font('freesansbold.ttf', 32)
     text = font.render(str(fighter.room), True, WHITE)
     txt = text.get_rect()
-    txt.center = (size[0] // 2, 50)
+    txt.center = (x, y)
     screen.blit(text, txt)
 
 class Fighter():
@@ -44,15 +44,15 @@ class Fighter():
         self.points = points
         self.room = room
         self.alive = True
-        self.img_path = './img\Knight\Idle/0.png'
+        self.img_path = 'img/Knight/Idle/0.png'
         img = pygame.image.load(self.img_path).convert_alpha()
         self.image = pygame.transform.scale(img, (img.get_width() * 3, img.get_height() * 3))
         self.rect = self.image.get_rect()
         self.rect.center = (self.x, self.y)
-    
+
     def loose_health(self, hp):
         self.health -= hp
-    
+
     def draw(self):
         screen.blit(self.image, (self.x, self.y))
 
@@ -65,7 +65,8 @@ while run:
     # Draw background
     draw_bg()
     draw_panel()
-    write_panel(knight)
+    write_panel(knight, size[0] // 2, 50)
+    write_panel(knight, 10, 10)
 
     knight.draw()
 

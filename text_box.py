@@ -1,11 +1,16 @@
 import pygame
 
+pygame.init()
+window = pygame.display.set_mode((500, 200))
+clock = pygame.time.Clock()
+font = pygame.font.SysFont(None, 100)
+
 class TextInputBox(pygame.sprite.Sprite):
     def __init__(self, x, y, w, font):
         super().__init__()
         self.color = (255, 255, 255)
         self.backcolor = None
-        self.pos = (x, y) 
+        self.pos = (x, y)
         self.width = w
         self.font = font
         self.active = False
@@ -34,10 +39,8 @@ class TextInputBox(pygame.sprite.Sprite):
                     self.text += event.unicode
                 self.render_text()
 
-pygame.init()
-window = pygame.display.set_mode((500, 200))
-clock = pygame.time.Clock()
-font = pygame.font.SysFont(None, 100)
+    def __str__(self):
+        return str(self.text)
 
 text_input_box = TextInputBox(50, 50, 400, font)
 group = pygame.sprite.Group(text_input_box)
@@ -50,10 +53,12 @@ while run:
         if event.type == pygame.QUIT:
             run = False
     group.update(event_list)
-
     window.fill(0)
     group.draw(window)
     pygame.display.flip()
+
+guilherme = text_input_box.text
+print(guilherme)
 
 pygame.quit()
 exit()
