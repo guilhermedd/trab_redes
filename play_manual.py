@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+
 def play_manual(sock, host, port,):
 
     def clear_terminal():
