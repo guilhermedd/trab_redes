@@ -3,7 +3,7 @@ import sys
 import time
 
 import pygame
-   
+
 def play_manual_game(sock, host, port,):
      pygame.init()
      clock = pygame.time.Clock()
@@ -22,40 +22,6 @@ def play_manual_game(sock, host, port,):
      panel_image = pygame.image.load('./img/Icons/panel.png').convert_alpha()
      panel_image = pygame.transform.scale(panel_image, (size[0], bottom_panel))
 
-     class TextInputBox(pygame.sprite.Sprite):
-          def __init__(self, x, y, w, font):
-               super().__init__()
-               self.color = (255, 255, 255)
-               self.backcolor = None
-               self.pos = (x, y) 
-               self.width = w
-               self.font = font
-               self.active = False
-               self.text = ""
-               self.render_text()
-
-          def render_text(self):
-               t_surf = self.font.render(self.text, True, self.color, self.backcolor)
-               self.image = pygame.Surface((max(self.width, t_surf.get_width()+10), t_surf.get_height()+10), pygame.SRCALPHA)
-               if self.backcolor:
-                    self.image.fill(self.backcolor)
-               self.image.blit(t_surf, (5, 5))
-               pygame.draw.rect(self.image, self.color, self.image.get_rect().inflate(-2, -2), 2)
-               self.rect = self.image.get_rect(topleft = self.pos)
-
-          def update(self, event_list):
-               for event in event_list:
-                    if event.type == pygame.MOUSEBUTTONDOWN and not self.active:
-                         self.active = self.rect.collidepoint(event.pos)
-                    if event.type == pygame.KEYDOWN and self.active:
-                         if event.key == pygame.K_RETURN:
-                              self.active = False
-                         elif event.key == pygame.K_BACKSPACE:
-                              self.text = self.text[:-1]
-                         else:
-                              self.text += event.unicode
-                         self.render_text()
-
      def draw_bg():
      # screen.llit(background_image, [0, 0])
           screen.blit(background_image, (0, 0))
@@ -64,12 +30,39 @@ def play_manual_game(sock, host, port,):
      # screen.llit(background_image, [0, 0])
           screen.blit(panel_image, (0, size[1]))
 
-     def write_panel(msg):
+     def get_input(events):
+          for event in events:
+               if event.type == pygame.QUIT:
+                # Exit the game if the user closes the window
+                    pygame.quit()
+                    quit()
+               elif event.type == pygame.MOUSEBUTTONDOWN:
+                    # Set the input box to active if the user clicks on it
+                    if input_box.collidepoint(event.pos):
+                         input_active = True
+                    else:
+                         input_active = False
+               elif event.type == pygame.KEYDOWN:
+                    # Add characters to the user input if the input box is active
+                    if input_active:
+                         if event.key == pygame.K_RETURN:
+                              # Save the user input and clear the input box
+                              print("User input:", user_input)
+                              user_input = ""
+                         elif event.key == pygame.K_BACKSPACE:
+                              # Remove the last character from the user input
+                              user_input = user_input[:-1]
+                         else:
+                              # Add the character to the user input
+                              user_input += event.unicode
+          return user_input
+
+     def write_panel(msg, x, y):
           WHITE = (255, 255, 255)
           font = pygame.font.Font('freesansbold.ttf', 32)
           text = font.render(str(msg), True, WHITE)
           txt = text.get_rect()
-          txt.center = (size[0] // 2, 50)
+          txt.center = (x, y)
           screen.blit(text, txt)
 
      class Fighter():
@@ -122,12 +115,9 @@ def play_manual_game(sock, host, port,):
                life = response[1]
           return life
 
-     def get_monster_atack(msg, num, life):
+     def get_monster_atack(msg, num, life, choice):
           # show_message(msg)
-          answer = str(input())
-          while not answer.isdigit() or int(answer) < 0 or int(answer) > int(num):
-               # show_message('Resposta inválida, bobinho! Digite um número de 0 a {}'.format(num))
-               answer = str(input())
+          answer = str(choice)
           send_message(sock, answer)
 
           return get_monster_response(life)
@@ -136,12 +126,9 @@ def play_manual_game(sock, host, port,):
           pass
           # show_message('Nada aconteceu... Voce resolveu continuar a aventura!')
 
-     def get_chest(points):
+     def get_chest(points, choice):
           # show_message('Você encontrou um baú hihihi!\nPode ser que lá tenha algo bom... ou algo ruim...\nDeseja abrir o baú? (S/N)')
-          answer = str(input())
-          while answer != 'S' and answer != 's' and answer != 'N' and answer != 'n':
-               # show_message('Resposta inválida, bobinho! Digite S ou N')
-               answer = str(input())
+          answer = str(choice)
           send_message(sock, 'YES' if answer == 'S' or answer == 's' else 'NO')
           if answer == 'S' or answer == 's':
                pts = sock.recv(1024).decode('ASCII').split(';')[1]
@@ -150,22 +137,19 @@ def play_manual_game(sock, host, port,):
           else:
                sock.recv(1024).decode('ASCII')
                # show_message('Você decidiu não abrir o baú :/')
-          
+
           return points if points > 0 else 0
 
      def game_over(message):
           # show_message(f'Fim de jogo!, voce {"GANHOU" if message == "WIN" else "PERDEU"}')
           sock.close()
 
-     def get_boss(life):
+     def get_boss(life, choice):
           # show_message('Você se deparou com o chefe do jogo!!!\nVoce quer lutar contra ele?')
           # show_message('Se voce escolher lutar e morrer, poderá perder bastante vida...')
           # show_message('Se voce escolher fugir, perderá um pouco de vida...')
           # show_message('Desejas lutar? (S/N)', sleeping=0.01)
-          answer = str(input())
-          while answer != 'S' and answer != 's' and answer != 'N' and answer != 'n':
-               # show_message('Resposta inválida, bobinho! Digite S ou N')
-               answer = str(input())
+          answer = str(choice)
           if answer == 'S' or answer == 's':
                send_message(sock, 'FIGHT')
                print('Voce escolheu LUTAR!')
@@ -196,18 +180,20 @@ def play_manual_game(sock, host, port,):
      room = 0
      knight = Fighter(70, 180, life, points, room)
      run = True
-     while run:  
-          # GAME PART   
+     while run:
+          # GAME PART
           clock.tick(fps)
           draw_bg()
 
           # Draw background
           draw_panel()
-          write_panel(knight.room)
+          write_panel(knight.room, size[0] // 2, 50)
           knight.draw()
           knight.room += 1
 
-          for event in pygame.event.get():
+          events = pygame.event.get()
+          for event in events:
+               events = pygame.event.get()
                clear_terminal()
                room += 1
                print(f"Room: {room}")
@@ -231,7 +217,13 @@ def play_manual_game(sock, host, port,):
 
                elif response[0] == 'MONSTER_ATTACK':
                     # Fighter(700, 180, life, points, room).draw()
-                    # life = get_monster_atack('AH MEU DEUS, O MONSTRO TE ATACOU!!!\nRÁPIDO! Escolha um número de 0 a {} para contra-atacar!'.format(response[1]), response[1], life)
+                    write_panel('AH MEU DEUS, O MONSTRO TE ATACOU!!!\nRÁPIDO! Escolha um número de 0 a {} para contra-atacar!'.format(response[1]), 50, 50)
+                    input_box = pygame.Rect(50, 100, 300, 50)
+                    user_input = ""
+                    input_active = False
+                    user_input = get_input(events)
+
+                    life = get_monster_atack('AH MEU DEUS, O MONSTRO TE ATACOU!!!\nRÁPIDO! Escolha um número de 0 a {} para contra-atacar!'.format(response[1]), response[1], life, user_input)
                     send_message(sock, 'WALK')
 
                elif response[0] == "TAKE_CHEST":
