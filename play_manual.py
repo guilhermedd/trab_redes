@@ -10,14 +10,14 @@ def play_manual(sock, host, port,):
     def send_message(sock, message):
         sock.sendall(message.encode('UTF-8'))
 
-    def show_message(message, sleeping = 0.05):
+    def show_message(message, sleeping = 0.5):
         for l in message:
             sys.stdout.write(l)
             sys.stdout.flush()
             if l == '.':
                 sleeping = 0.1
             else:
-                sleeping = 0.05
+                sleeping = 0.5
             time.sleep(sleeping)
         print('\n')
 
@@ -44,7 +44,7 @@ def play_manual(sock, host, port,):
     def get_nothing():
         show_message('Nada aconteceu... Voce resolveu continuar a aventura!')
 
-    def get_chest():
+    def get_chest(points):
         show_message('Você encontrou um baú hihihi!\nPode ser que lá tenha algo bom... ou algo ruim...\nDeseja abrir o baú? (S/N)')
         answer = str(input())
         while answer != 'S' and answer != 's' and answer != 'N' and answer != 'n':
@@ -52,10 +52,14 @@ def play_manual(sock, host, port,):
             answer = str(input())
         send_message(sock, 'YES' if answer == 'S' or answer == 's' else 'NO')
         if answer == 'S' or answer == 's':
-            show_message('Você abriu o baú e encontrou {} pontos!'.format(sock.recv(1024).decode('ASCII').split(';')[1]))
+            pts = sock.recv(1024).decode('ASCII').split(';')[1]
+            show_message('Você abriu o baú e encontrou {} pontos!'.format(pts))
+            points += int(pts)
         else:
             sock.recv(1024).decode('ASCII')
             show_message('Você decidiu não abrir o baú :/')
+        
+        return points if points > 0 else 0
 
     def game_over(message):
         show_message(f'Fim de jogo!, voce {"GANHOU" if message == "WIN" else "PERDEU"}')
@@ -77,16 +81,17 @@ def play_manual(sock, host, port,):
             send_message(sock, 'RUN')
 
         response = sock.recv(1024).decode('ASCII').split(';')
-        print(response)
         if response[0] == 'BOSS_DEFEATED':
             show_message('Você derrotou o chefe! :D')
             show_message('E você ganhou {} pontos!'.format(response[2]))
         elif response[0] == 'FAILED_BOSS_FIGHT':
             show_message('O chefe desviou e te atacou! :(')
             show_message('Você está com {} de vida'.format(response[1]))
+            life = response[1]
         else:
             show_message('Você fugiu do chefe! Mas está com {} de vida!'.format(response[1]))
-
+            life = response[1]
+        return life
     # Connect to server
     sock.connect((host, port))
 
@@ -106,7 +111,7 @@ def play_manual(sock, host, port,):
 
         try:
             if response[0] != 'NOTHING_HAPPENED' and response[0] != 'TAKE_CHEST' :
-                life = int(response[2])
+                life = int(response[2]) if response[0] == 'MONSTER_ATTACK' else int(response[1])
                 points = int(response[3])
         except IndexError:
             life += 0
@@ -124,11 +129,11 @@ def play_manual(sock, host, port,):
             send_message(sock, 'WALK')
 
         elif response[0] == "TAKE_CHEST":
-            get_chest()
+            points = get_chest(points)
             send_message(sock, 'WALK')
 
         elif response[0] == "BOSS_EVENT":
-            get_boss(life)
+            life = get_boss(life)
             send_message(sock, 'WALK')
             # sock.recv(1024)
 

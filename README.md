@@ -1,4 +1,4 @@
 # trab_redes
-Objective: add AI to play the game
-
-Game currently working
+First: launch Servidor.py
+Second: launch save.py
+There you can choose to play (1) or let the AI play (2) 
