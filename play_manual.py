@@ -18,7 +18,7 @@ def play_manual(sock, host, port,):
             if l == '.':
                 sleeping = 0.1
             else:
-                sleeping = 0.5
+                sleeping = 0.05
             time.sleep(sleeping)
         print('\n')
 
@@ -29,8 +29,8 @@ def play_manual(sock, host, port,):
         else:
             show_message('O monstro desviou e te atacou! :(')
             show_message('Você está com {} de vida'.format(response[1]))
-            life = response[1]
-        return life
+            life = int(response[1])
+        return life, int(response[2])
 
     def get_monster_atack(msg, num, life):
         show_message(msg)
@@ -59,7 +59,7 @@ def play_manual(sock, host, port,):
         else:
             sock.recv(1024).decode('ASCII')
             show_message('Você decidiu não abrir o baú :/')
-        
+
         return points if points > 0 else 0
 
     def game_over(message):
@@ -91,8 +91,8 @@ def play_manual(sock, host, port,):
             life = response[1]
         else:
             show_message('Você fugiu do chefe! Mas está com {} de vida!'.format(response[1]))
-            life = response[1]
-        return life
+            life = int(response[1])
+        return life, int(response[2])
     # Connect to server
     sock.connect((host, port))
 
@@ -115,8 +115,7 @@ def play_manual(sock, host, port,):
                 life = int(response[2]) if response[0] == 'MONSTER_ATTACK' else int(response[1])
                 points = int(response[3])
         except IndexError:
-            life += 0
-            points += 0    # send_message(sock, 'WALK')
+            pass
         show_message(' --- SUA VIDA: {} ---\n--- SEUS PONTOS: {} ---'.format(life, points))
 
         if response[0] == 'GAME_OVER' or response == 'WIN':
@@ -126,7 +125,7 @@ def play_manual(sock, host, port,):
         # print(response) # verificar se response não está vazio
 
         elif response[0] == 'MONSTER_ATTACK':
-            life = get_monster_atack('AH MEU DEUS, O MONSTRO TE ATACOU!!!\nRÁPIDO! Escolha um número de 0 a {} para contra-atacar!'.format(response[1]), response[1], life)
+            life, points = get_monster_atack('AH MEU DEUS, O MONSTRO TE ATACOU!!!\nRÁPIDO! Escolha um número de 0 a {} para contra-atacar!'.format(response[1]), response[1], life)
             send_message(sock, 'WALK')
 
         elif response[0] == "TAKE_CHEST":
@@ -134,13 +133,21 @@ def play_manual(sock, host, port,):
             send_message(sock, 'WALK')
 
         elif response[0] == "BOSS_EVENT":
-            life = get_boss(life)
+            life, points = get_boss(life)
             send_message(sock, 'WALK')
             # sock.recv(1024)
 
         elif response[0] == "NOTHING_HAPPENED":
             get_nothing()
             send_message(sock, 'WALK')
+
+        if room >= 20:
+            game_over('WIN')
+            break
+
+        elif  int(life) <= 0:
+            game_over('LOSE')
+            break
 
         print('Para seguir para a próxima sala, aperte ENTER')
         if input():

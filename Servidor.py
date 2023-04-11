@@ -4,17 +4,6 @@ from random import randint, choice
 
 POSSIBLE_EVENTS = [
     'MONSTER_ATTACK',
-    'MONSTER_ATTACK',
-    'MONSTER_ATTACK',
-    'MONSTER_ATTACK',
-    'MONSTER_ATTACK',
-
-    'CHEST',
-
-    'NOTHING',
-    'NOTHING',
-    'NOTHING',
-    'NOTHING',
 
     'BOSS',
 ]
@@ -26,7 +15,7 @@ class Server:
         self.health = 100
         self.client = None
         self.connection = None
-    
+
     def send(self, msg):
         msg = '{};{};{}'.format(msg, self.health, self.score)
         self.client.send(bytes(msg, encoding='utf-8'))
@@ -37,7 +26,7 @@ class Server:
             return result
         else:
             raise Exception()
-            
+
 
     def handle_monster_attack(self):
         print('Monstro atrás das portas!')
@@ -67,7 +56,7 @@ class Server:
             self.send('CHEST_VALUE;{}'.format(chest_value))
         else:
             self.send('SKIPPING_CHEST')
-            
+
     def handle_nothing(self):
         print('E nada aconteceu...')
         self.send('NOTHING_HAPPENED')
@@ -145,7 +134,7 @@ class Server:
                     self.send('WIN;{}'.format(self.state_num))
                     self.client.close()
                     self.wait_client()
-                
+
         except Exception as e:
             self.client.close()
             self.connection.close()

@@ -20,9 +20,9 @@ def play_auto(sock, host, port,):
             sys.stdout.write(l)
             sys.stdout.flush()
             if l == '.':
-                sleeping = 0.005
+                sleeping = 0.1
             else:
-                sleeping = 0.001
+                sleeping = 0.05
             time.sleep(sleeping)
         print('\n')
 
@@ -36,7 +36,7 @@ def play_auto(sock, host, port,):
             show_message('Você está com {} de vida'.format(response[1]))
             life = response[1]
             efficacy = -1
-        return life, efficacy
+        return life, efficacy, int(response[2])
 
     def get_monster_atack(msg, num, life, choice):
         show_message(msg)
@@ -88,7 +88,7 @@ def play_auto(sock, host, port,):
             show_message('Você está com {} de vida'.format(response[1]))
             return -1, life
         show_message('Você fugiu do chefe! Mas está com {} de vida!'.format(response[1]))
-        return 0, life
+        return 0, life, int(response[2])
 
     # Connect to server
     sock.connect((host, port))
@@ -126,19 +126,19 @@ def play_auto(sock, host, port,):
         elif response[0] == 'MONSTER_ATTACK':
             state = 0
             choice = qlearn.choose_action(event='MONSTER_ATTACK', num=response[1], state=state)
-            life, reward = get_monster_atack('AH MEU DEUS, O MONSTRO TE ATACOU!!!\nRÁPIDO! Escolha um número de 0 a {} para contra-atacar!'.format(response[1]), response[1], life, choice)
+            life, reward, points = get_monster_atack('AH MEU DEUS, O MONSTRO TE ATACOU!!!\nRÁPIDO! Escolha um número de 0 a {} para contra-atacar!'.format(response[1]), response[1], life, choice)
             send_message(sock, 'WALK')
 
         elif response[0] == "TAKE_CHEST":
             state = 1
-            choice = qlearn.choose_action(event='TAKE_CHEST', state=state, num = 0) 
+            choice = qlearn.choose_action(event='TAKE_CHEST', state=state, num = 0)
             reward, points = get_chest(choice, points)
             send_message(sock, 'WALK')
 
         elif response[0] == "BOSS_EVENT":
             state = 2
             choice = qlearn.choose_action(event='BOSS_EVENT', state=state, num = 0)
-            reward, life = get_boss(choice, life)
+            reward, life, points = get_boss(choice, life)
             send_message(sock, 'WALK')
             # sock.recv(1024)
 
@@ -149,5 +149,12 @@ def play_auto(sock, host, port,):
         # send_message(sock, 'WALK')
         if response[0] != "NOTHING_HAPPENED":
             qlearn.learn(response[0], choice, reward, state)
+
+        if room >= 20:
+            game_over('WIN')
+            break
+        elif  int(life) <= 0:
+            game_over('LOSE')
+            break
 
         time.sleep(1.5)
