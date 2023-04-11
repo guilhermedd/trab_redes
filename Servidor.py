@@ -4,6 +4,17 @@ from random import randint, choice
 
 POSSIBLE_EVENTS = [
     'MONSTER_ATTACK',
+    'MONSTER_ATTACK',
+    'MONSTER_ATTACK',
+    'MONSTER_ATTACK',
+    'MONSTER_ATTACK',
+
+    'CHEST',
+
+    'NOTHING',
+    'NOTHING',
+    'NOTHING',
+    'NOTHING',
 
     'BOSS',
 ]

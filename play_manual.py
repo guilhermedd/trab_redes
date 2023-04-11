@@ -91,7 +91,7 @@ def play_manual(sock, host, port,):
             life = response[1]
         else:
             show_message('Você fugiu do chefe! Mas está com {} de vida!'.format(response[1]))
-            life = int(response[1])
+        life = int(response[1])
         return life, int(response[2])
     # Connect to server
     sock.connect((host, port))
